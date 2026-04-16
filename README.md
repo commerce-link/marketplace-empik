@@ -1,6 +1,6 @@
 # Marketplace Empik
 
-[EmpikPlace](https://www.empik.com/empikplace) marketplace integration for the CommerceLink platform. This library implements the [marketplace-api](../marketplace-api) provider interface, enabling order import, offer export, and order lifecycle updates through the EmpikPlace marketplace API.
+[EmpikPlace](https://www.empik.com/empikplace) marketplace integration for the CommerceLink platform. This library implements the [marketplace-api](https://github.com/commerce-link/marketplace-api) provider interface, enabling order import, offer export, and order lifecycle updates through the EmpikPlace marketplace API.
 
 ## Mirakl Platform
 
