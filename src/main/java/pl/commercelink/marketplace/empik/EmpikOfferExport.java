@@ -21,7 +21,7 @@ class EmpikOfferExport {
         empikOffers.addAll(offersToRemove.stream().map(EmpikOffer::unpublishOffer).toList());
 
         OffersRequest request = new OffersRequest(empikOffers);
-        restApi.post("/api/offers", request, String.class);
+        restApi.post("/api/offers", request, EmpikOffersImportResponse.class);
     }
 
     static class OffersRequest {

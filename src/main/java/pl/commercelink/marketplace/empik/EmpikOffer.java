@@ -51,7 +51,7 @@ class EmpikOffer {
         empikOffer.productIdType = "EAN";
         empikOffer.price = offer.price();
         empikOffer.quantity = 0;
-        empikOffer.updateDelete = "delete";
+        empikOffer.updateDelete = "update";
         return empikOffer;
     }
 

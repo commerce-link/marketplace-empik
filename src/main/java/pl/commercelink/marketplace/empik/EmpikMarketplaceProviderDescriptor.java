@@ -17,7 +17,7 @@ public class EmpikMarketplaceProviderDescriptor implements MarketplaceProviderDe
 
     @Override
     public String displayName() {
-        return "EmpikPlace";
+        return "Empik";
     }
 
     @Override
