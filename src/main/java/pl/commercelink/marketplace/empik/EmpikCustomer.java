@@ -16,9 +16,6 @@ class EmpikCustomer {
     @JsonProperty("lastname")
     private String lastname;
 
-    @JsonProperty("email")
-    private String email;
-
     @JsonProperty("billing_address")
     private EmpikAddress billingAddress;
 
@@ -28,7 +25,7 @@ class EmpikCustomer {
     public EmpikCustomer() {
     }
 
-    public MarketplaceCustomer toMarketplaceCustomer() {
+    public MarketplaceCustomer toMarketplaceCustomer(String email) {
         String fullName = (firstname != null ? firstname : "") + " " + (lastname != null ? lastname : "");
         fullName = fullName.trim();
 
@@ -83,10 +80,6 @@ class EmpikCustomer {
 
     public String getLastname() {
         return lastname;
-    }
-
-    public String getEmail() {
-        return email;
     }
 
     public EmpikAddress getBillingAddress() {

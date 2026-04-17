@@ -41,6 +41,9 @@ class EmpikOrder {
     @JsonProperty("transaction_number")
     private String transactionNumber;
 
+    @JsonProperty("customer_notification_email")
+    private String customerNotificationEmail;
+
     @JsonProperty("customer")
     private EmpikCustomer customer;
 
@@ -92,6 +95,10 @@ class EmpikOrder {
 
     public String getTransactionNumber() {
         return transactionNumber;
+    }
+
+    public String getCustomerNotificationEmail() {
+        return customerNotificationEmail;
     }
 
     public EmpikCustomer getCustomer() {
