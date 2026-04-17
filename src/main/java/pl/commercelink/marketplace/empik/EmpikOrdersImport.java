@@ -43,7 +43,10 @@ class EmpikOrdersImport {
     }
 
     private MarketplaceOrder toMarketplaceOrder(EmpikOrder empikOrder) {
-        var marketplaceCustomer = empikOrder.getCustomer().toMarketplaceCustomer(empikOrder.getCustomerNotificationEmail());
+        var marketplaceCustomer = empikOrder.getCustomer().toMarketplaceCustomer(
+                empikOrder.getCustomerNotificationEmail(),
+                empikOrder.findAdditionalField("nip")
+        );
 
         List<MarketplaceProduct> products = empikOrder.getOrderLines().stream()
                 .map(line -> new MarketplaceProduct(

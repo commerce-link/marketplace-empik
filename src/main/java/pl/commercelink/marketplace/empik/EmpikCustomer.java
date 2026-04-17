@@ -25,7 +25,7 @@ class EmpikCustomer {
     public EmpikCustomer() {
     }
 
-    public MarketplaceCustomer toMarketplaceCustomer(String email) {
+    public MarketplaceCustomer toMarketplaceCustomer(String email, String taxId) {
         String fullName = (firstname != null ? firstname : "") + " " + (lastname != null ? lastname : "");
         fullName = fullName.trim();
 
@@ -40,7 +40,7 @@ class EmpikCustomer {
                 company,
                 email,
                 billingAddress != null ? billingAddress.getPhone() : null,
-                null,
+                taxId,
                 toBillingAddress(),
                 toShippingAddress()
         );

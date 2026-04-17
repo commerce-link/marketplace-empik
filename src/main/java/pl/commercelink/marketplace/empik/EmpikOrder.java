@@ -50,6 +50,9 @@ class EmpikOrder {
     @JsonProperty("order_lines")
     private List<EmpikOrderLine> orderLines;
 
+    @JsonProperty("order_additional_fields")
+    private List<EmpikOrderAdditionalField> orderAdditionalFields;
+
     public EmpikOrder() {
     }
 
@@ -107,5 +110,18 @@ class EmpikOrder {
 
     public List<EmpikOrderLine> getOrderLines() {
         return orderLines;
+    }
+
+    public List<EmpikOrderAdditionalField> getOrderAdditionalFields() {
+        return orderAdditionalFields;
+    }
+
+    public String findAdditionalField(String code) {
+        if (orderAdditionalFields == null || code == null) return null;
+        return orderAdditionalFields.stream()
+                .filter(f -> code.equalsIgnoreCase(f.getCode()))
+                .map(EmpikOrderAdditionalField::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }
