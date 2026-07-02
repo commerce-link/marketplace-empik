@@ -74,8 +74,12 @@ class EmpikOrderLifecycleEventHandler {
 
     private void submitLineDecisions(EmpikOrder order, boolean accepted) {
         List<AcceptOrderLine> lines = order.getOrderLines().stream()
+                .filter(line -> line.getOrderLineState() == null || WAITING_ACCEPTANCE.equals(line.getOrderLineState()))
                 .map(line -> new AcceptOrderLine(accepted, line.getOrderLineId()))
                 .collect(Collectors.toList());
+        if (lines.isEmpty()) {
+            return;
+        }
         restApi.put("/api/orders/" + order.getOrderId() + "/accept", new AcceptOrderRequest(lines), Void.class);
     }
 

@@ -50,6 +50,35 @@ class EmpikOrderLifecycleEventHandlerTest {
     }
 
     @Test
+    void acceptOrderSendsDecisionsOnlyForLinesAwaitingAcceptance() throws Exception {
+        // given
+        givenFetchedOrderWithLineStates("WAITING_ACCEPTANCE", "WAITING_ACCEPTANCE", "CANCELED");
+
+        // when
+        handler.acceptOrder("ORDER-1");
+
+        // then
+        ArgumentCaptor<Object> body = ArgumentCaptor.forClass(Object.class);
+        verify(restApi).put(eq("/api/orders/ORDER-1/accept"), body.capture(), eq(Void.class));
+        assertEquals(
+                "{\"order_lines\":[{\"accepted\":true,\"id\":\"LINE-1\"}]}",
+                MAPPER.writeValueAsString(body.getValue())
+        );
+    }
+
+    @Test
+    void acceptOrderSkipsCallWhenNoLineAwaitsAcceptance() throws Exception {
+        // given
+        givenFetchedOrderWithLineStates("WAITING_ACCEPTANCE", "CANCELED", "CANCELED");
+
+        // when
+        handler.acceptOrder("ORDER-1");
+
+        // then
+        verify(restApi, never()).put(anyString(), any(), any());
+    }
+
+    @Test
     void acceptOrderSkipsOrderThatIsNoLongerWaitingAcceptance() throws Exception {
         // given
         givenFetchedOrder("SHIPPING");
@@ -123,6 +152,23 @@ class EmpikOrderLifecycleEventHandlerTest {
     }
 
     @Test
+    void cancelOrderRefusesOnlyLinesAwaitingAcceptance() throws Exception {
+        // given
+        givenFetchedOrderWithLineStates("WAITING_ACCEPTANCE", "WAITING_ACCEPTANCE", "CANCELED");
+
+        // when
+        handler.cancelOrder("ORDER-1");
+
+        // then
+        ArgumentCaptor<Object> body = ArgumentCaptor.forClass(Object.class);
+        verify(restApi).put(eq("/api/orders/ORDER-1/accept"), body.capture(), eq(Void.class));
+        assertEquals(
+                "{\"order_lines\":[{\"accepted\":false,\"id\":\"LINE-1\"}]}",
+                MAPPER.writeValueAsString(body.getValue())
+        );
+    }
+
+    @Test
     void cancelOrderPerformsFullCancelationOfAcceptedOrder() throws Exception {
         // given
         givenFetchedOrder("SHIPPING");
@@ -191,6 +237,18 @@ class EmpikOrderLifecycleEventHandlerTest {
                 {"orders":[{"order_id":"ORDER-1","order_state":"%s",
                   "order_lines":[{"order_line_id":"LINE-1"},{"order_line_id":"LINE-2"}]}]}
                 """.formatted(state),
+                EmpikOrdersResponse.class
+        );
+        when(restApi.fetch(eq("/api/orders"), anyMap(), eq(EmpikOrdersResponse.class))).thenReturn(response);
+    }
+
+    private void givenFetchedOrderWithLineStates(String orderState, String line1State, String line2State) throws Exception {
+        EmpikOrdersResponse response = MAPPER.readValue(
+                """
+                {"orders":[{"order_id":"ORDER-1","order_state":"%s",
+                  "order_lines":[{"order_line_id":"LINE-1","order_line_state":"%s"},
+                    {"order_line_id":"LINE-2","order_line_state":"%s"}]}]}
+                """.formatted(orderState, line1State, line2State),
                 EmpikOrdersResponse.class
         );
         when(restApi.fetch(eq("/api/orders"), anyMap(), eq(EmpikOrdersResponse.class))).thenReturn(response);
