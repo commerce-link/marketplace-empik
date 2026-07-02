@@ -28,13 +28,18 @@ class EmpikMarketplaceProvider implements MarketplaceProvider {
     }
 
     @Override
-    public void updateOrderStatus(String externalOrderId, MarketplaceOrderStatus status) {
-        lifecycleHandler.updateOrderStatus(externalOrderId, status);
+    public void acceptOrder(String externalOrderId) {
+        lifecycleHandler.acceptOrder(externalOrderId);
     }
 
     @Override
-    public void updateShipment(String externalOrderId, ShipmentUpdate update) {
-        lifecycleHandler.updateShipment(externalOrderId, update);
+    public void shipOrder(String externalOrderId, ShipmentUpdate update) {
+        lifecycleHandler.shipOrder(externalOrderId, update);
+    }
+
+    @Override
+    public void cancelOrder(String externalOrderId) {
+        lifecycleHandler.cancelOrder(externalOrderId);
     }
 
     @Override

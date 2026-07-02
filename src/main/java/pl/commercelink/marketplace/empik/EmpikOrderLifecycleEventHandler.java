@@ -2,7 +2,6 @@ package pl.commercelink.marketplace.empik;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import pl.commercelink.marketplace.api.InvoiceUpdate;
-import pl.commercelink.marketplace.api.MarketplaceOrderStatus;
 import pl.commercelink.marketplace.api.ShipmentUpdate;
 import pl.commercelink.rest.client.RestApi;
 
@@ -13,48 +12,54 @@ import java.util.stream.Collectors;
 
 class EmpikOrderLifecycleEventHandler {
 
+    private static final String WAITING_ACCEPTANCE = "WAITING_ACCEPTANCE";
+
     private final RestApi restApi;
 
     EmpikOrderLifecycleEventHandler(RestApi restApi) {
         this.restApi = restApi;
     }
 
-    void updateOrderStatus(String externalOrderId, MarketplaceOrderStatus status) {
-        if (status != MarketplaceOrderStatus.Shipping) {
+    void acceptOrder(String externalOrderId) {
+        EmpikOrder order = fetchOrder(externalOrderId);
+        if (order == null || !WAITING_ACCEPTANCE.equals(order.getOrderState())) {
             return;
         }
-
-        EmpikOrder order = fetchOrder(externalOrderId);
-        if (order == null) return;
-
-        List<ShipOrderLine> lines = order.getOrderLines().stream()
-                .map(line -> new ShipOrderLine(line.getOrderLineId()))
-                .collect(Collectors.toList());
-
-        ShipOrderRequest request = new ShipOrderRequest(externalOrderId, lines);
-        restApi.put("/api/orders/ship", List.of(request), String.class);
+        acceptOrderLines(order, true);
     }
 
-    void updateShipment(String externalOrderId, ShipmentUpdate update) {
+    void shipOrder(String externalOrderId, ShipmentUpdate update) {
+        TrackingUpdateRequest tracking = new TrackingUpdateRequest(
+                update.carrier(),
+                update.trackingUrl(),
+                update.trackingNo()
+        );
+        restApi.put("/api/orders/" + externalOrderId + "/tracking", tracking, Void.class);
+        restApi.put("/api/orders/" + externalOrderId + "/ship", Map.of(), Void.class);
+    }
+
+    void cancelOrder(String externalOrderId) {
         EmpikOrder order = fetchOrder(externalOrderId);
-        if (order == null) return;
-
-        List<TrackingOrderLine> lines = order.getOrderLines().stream()
-                .map(line -> new TrackingOrderLine(
-                        line.getOrderLineId(),
-                        update.trackingNo(),
-                        update.carrier(),
-                        update.trackingUrl()
-                ))
-                .collect(Collectors.toList());
-
-        TrackingUpdateRequest request = new TrackingUpdateRequest(externalOrderId, lines);
-        restApi.put("/api/orders/tracking", List.of(request), String.class);
+        if (order == null) {
+            return;
+        }
+        if (WAITING_ACCEPTANCE.equals(order.getOrderState())) {
+            acceptOrderLines(order, false);
+        } else {
+            restApi.put("/api/orders/" + externalOrderId + "/cancel", Map.of(), Void.class);
+        }
     }
 
     void updateInvoice(String externalOrderId, InvoiceUpdate update) {
         // Empik document upload (OR74) requires multipart file upload.
         // To be implemented after verifying the exact format on sandbox.
+    }
+
+    private void acceptOrderLines(EmpikOrder order, boolean accepted) {
+        List<AcceptOrderLine> lines = order.getOrderLines().stream()
+                .map(line -> new AcceptOrderLine(accepted, line.getOrderLineId()))
+                .collect(Collectors.toList());
+        restApi.put("/api/orders/" + order.getOrderId() + "/accept", new AcceptOrderRequest(lines), Void.class);
     }
 
     private EmpikOrder fetchOrder(String orderId) {
@@ -68,35 +73,35 @@ class EmpikOrderLifecycleEventHandler {
         return response.getOrders().get(0);
     }
 
-    static class ShipOrderRequest {
-
-        @JsonProperty("order_id")
-        private final String orderId;
+    static class AcceptOrderRequest {
 
         @JsonProperty("order_lines")
-        private final List<ShipOrderLine> orderLines;
+        private final List<AcceptOrderLine> orderLines;
 
-        ShipOrderRequest(String orderId, List<ShipOrderLine> orderLines) {
-            this.orderId = orderId;
+        AcceptOrderRequest(List<AcceptOrderLine> orderLines) {
             this.orderLines = orderLines;
         }
 
-        public String getOrderId() {
-            return orderId;
-        }
-
-        public List<ShipOrderLine> getOrderLines() {
+        public List<AcceptOrderLine> getOrderLines() {
             return orderLines;
         }
     }
 
-    static class ShipOrderLine {
+    static class AcceptOrderLine {
+
+        @JsonProperty("accepted")
+        private final boolean accepted;
 
         @JsonProperty("id")
         private final String id;
 
-        ShipOrderLine(String id) {
+        AcceptOrderLine(boolean accepted, String id) {
+            this.accepted = accepted;
             this.id = id;
+        }
+
+        public boolean isAccepted() {
+            return accepted;
         }
 
         public String getId() {
@@ -106,61 +111,31 @@ class EmpikOrderLifecycleEventHandler {
 
     static class TrackingUpdateRequest {
 
-        @JsonProperty("order_id")
-        private final String orderId;
+        @JsonProperty("carrier_name")
+        private final String carrierName;
 
-        @JsonProperty("order_lines")
-        private final List<TrackingOrderLine> orderLines;
-
-        TrackingUpdateRequest(String orderId, List<TrackingOrderLine> orderLines) {
-            this.orderId = orderId;
-            this.orderLines = orderLines;
-        }
-
-        public String getOrderId() {
-            return orderId;
-        }
-
-        public List<TrackingOrderLine> getOrderLines() {
-            return orderLines;
-        }
-    }
-
-    static class TrackingOrderLine {
-
-        @JsonProperty("id")
-        private final String id;
+        @JsonProperty("carrier_url")
+        private final String carrierUrl;
 
         @JsonProperty("tracking_number")
         private final String trackingNumber;
 
-        @JsonProperty("carrier_code")
-        private final String carrierCode;
-
-        @JsonProperty("tracking_url")
-        private final String trackingUrl;
-
-        TrackingOrderLine(String id, String trackingNumber, String carrierCode, String trackingUrl) {
-            this.id = id;
+        TrackingUpdateRequest(String carrierName, String carrierUrl, String trackingNumber) {
+            this.carrierName = carrierName;
+            this.carrierUrl = carrierUrl;
             this.trackingNumber = trackingNumber;
-            this.carrierCode = carrierCode;
-            this.trackingUrl = trackingUrl;
         }
 
-        public String getId() {
-            return id;
+        public String getCarrierName() {
+            return carrierName;
+        }
+
+        public String getCarrierUrl() {
+            return carrierUrl;
         }
 
         public String getTrackingNumber() {
             return trackingNumber;
-        }
-
-        public String getCarrierCode() {
-            return carrierCode;
-        }
-
-        public String getTrackingUrl() {
-            return trackingUrl;
         }
     }
 }

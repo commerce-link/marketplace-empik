@@ -22,7 +22,7 @@ class EmpikOrdersImport {
 
         do {
             Map<String, String> params = new HashMap<>();
-            params.put("order_state_codes", "SHIPPING");
+            params.put("order_state_codes", "WAITING_ACCEPTANCE,SHIPPING");
             params.put("limit", "100");
             if (pageToken != null) {
                 params.put("page_token", pageToken);
