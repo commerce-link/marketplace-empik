@@ -30,16 +30,20 @@ class EmpikOrderLifecycleEventHandler {
         if (order == null || !WAITING_ACCEPTANCE.equals(order.getOrderState())) {
             return;
         }
-        acceptOrderLines(order, true);
+        acceptOrderLines(order);
     }
 
     void shipOrder(String externalOrderId, ShipmentUpdate update) {
-        TrackingUpdateRequest tracking = new TrackingUpdateRequest(
-                update.carrier(),
-                update.trackingUrl(),
-                update.trackingNo()
-        );
-        restApi.put("/api/orders/" + externalOrderId + "/tracking", tracking, Void.class);
+        // Personal-collection shipments carry no tracking data (marketplace-api 0.2.0);
+        // skip the tracking PUT in that case but still mark the order as shipped.
+        if (update.trackingNo() != null) {
+            TrackingUpdateRequest tracking = new TrackingUpdateRequest(
+                    update.carrier(),
+                    update.trackingUrl(),
+                    update.trackingNo()
+            );
+            restApi.put("/api/orders/" + externalOrderId + "/tracking", tracking, Void.class);
+        }
         restApi.put("/api/orders/" + externalOrderId + "/ship", Map.of(), Void.class);
     }
 
@@ -49,7 +53,7 @@ class EmpikOrderLifecycleEventHandler {
             return;
         }
         if (WAITING_ACCEPTANCE.equals(order.getOrderState())) {
-            acceptOrderLines(order, false);
+            refuseOrderLines(order);
         } else if (CANCELLABLE_ORDER_STATES.contains(order.getOrderState())) {
             restApi.put("/api/orders/" + externalOrderId + "/cancel", Map.of(), Void.class);
         }
@@ -60,7 +64,15 @@ class EmpikOrderLifecycleEventHandler {
         // To be implemented after verifying the exact format on sandbox.
     }
 
-    private void acceptOrderLines(EmpikOrder order, boolean accepted) {
+    private void acceptOrderLines(EmpikOrder order) {
+        submitLineDecisions(order, true);
+    }
+
+    private void refuseOrderLines(EmpikOrder order) {
+        submitLineDecisions(order, false);
+    }
+
+    private void submitLineDecisions(EmpikOrder order, boolean accepted) {
         List<AcceptOrderLine> lines = order.getOrderLines().stream()
                 .map(line -> new AcceptOrderLine(accepted, line.getOrderLineId()))
                 .collect(Collectors.toList());

@@ -93,6 +93,19 @@ class EmpikOrderLifecycleEventHandlerTest {
     }
 
     @Test
+    void shipOrderSkipsTrackingWhenShipmentHasNoTracking() throws Exception {
+        // given
+        ShipmentUpdate update = new ShipmentUpdate(null, null, null);
+
+        // when
+        handler.shipOrder("ORDER-1", update);
+
+        // then
+        verify(restApi, never()).put(eq("/api/orders/ORDER-1/tracking"), any(), any());
+        verify(restApi).put(eq("/api/orders/ORDER-1/ship"), any(), eq(Void.class));
+    }
+
+    @Test
     void cancelOrderRefusesLinesWhenOrderStillWaitsForAcceptance() throws Exception {
         // given
         givenFetchedOrder("WAITING_ACCEPTANCE");
@@ -126,6 +139,44 @@ class EmpikOrderLifecycleEventHandlerTest {
     void cancelOrderSkipsOrderInNonCancellableState() throws Exception {
         // given
         givenFetchedOrder("SHIPPED");
+
+        // when
+        handler.cancelOrder("ORDER-1");
+
+        // then
+        verify(restApi, never()).put(anyString(), any(), any());
+    }
+
+    @Test
+    void cancelOrderPerformsFullCancelationWhenAwaitingDebit() throws Exception {
+        // given
+        givenFetchedOrder("WAITING_DEBIT");
+
+        // when
+        handler.cancelOrder("ORDER-1");
+
+        // then
+        verify(restApi).put(eq("/api/orders/ORDER-1/cancel"), any(), eq(Void.class));
+        verify(restApi, never()).put(eq("/api/orders/ORDER-1/accept"), any(), any());
+    }
+
+    @Test
+    void cancelOrderPerformsFullCancelationWhenAwaitingDebitPayment() throws Exception {
+        // given
+        givenFetchedOrder("WAITING_DEBIT_PAYMENT");
+
+        // when
+        handler.cancelOrder("ORDER-1");
+
+        // then
+        verify(restApi).put(eq("/api/orders/ORDER-1/cancel"), any(), eq(Void.class));
+        verify(restApi, never()).put(eq("/api/orders/ORDER-1/accept"), any(), any());
+    }
+
+    @Test
+    void cancelOrderSkipsUnknownOrder() throws Exception {
+        // given
+        givenNoOrder();
 
         // when
         handler.cancelOrder("ORDER-1");
