@@ -105,6 +105,7 @@ class EmpikOrderLifecycleEventHandlerTest {
     @Test
     void shipOrderSendsTrackingBeforeShipValidation() throws Exception {
         // given
+        givenFetchedOrder("SHIPPING");
         ShipmentUpdate update = new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9");
 
         // when
@@ -124,6 +125,7 @@ class EmpikOrderLifecycleEventHandlerTest {
     @Test
     void shipOrderSkipsTrackingWhenShipmentHasNoTracking() throws Exception {
         // given
+        givenFetchedOrder("SHIPPING");
         ShipmentUpdate update = new ShipmentUpdate(null, null, null);
 
         // when
@@ -131,6 +133,54 @@ class EmpikOrderLifecycleEventHandlerTest {
 
         // then
         verify(restApi, never()).put(eq("/api/orders/ORDER-1/tracking"), any(), any());
+        verify(restApi).put(eq("/api/orders/ORDER-1/ship"), any(), eq(Void.class));
+    }
+
+    @Test
+    void shipOrderSkipsOrderAlreadyShipped() throws Exception {
+        // given
+        givenFetchedOrder("SHIPPED");
+
+        // when
+        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9"));
+
+        // then
+        verify(restApi, never()).put(anyString(), any(), any());
+    }
+
+    @Test
+    void shipOrderSkipsCancelledOrder() throws Exception {
+        // given
+        givenFetchedOrder("CANCELED");
+
+        // when
+        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9"));
+
+        // then
+        verify(restApi, never()).put(anyString(), any(), any());
+    }
+
+    @Test
+    void shipOrderSkipsUnknownOrder() throws Exception {
+        // given
+        givenNoOrder();
+
+        // when
+        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9"));
+
+        // then
+        verify(restApi, never()).put(anyString(), any(), any());
+    }
+
+    @Test
+    void shipOrderStillAttemptsShipWhenOrderAwaitsDebit() throws Exception {
+        // given
+        givenFetchedOrder("WAITING_DEBIT");
+
+        // when
+        handler.shipOrder("ORDER-1", new ShipmentUpdate(null, null, null));
+
+        // then
         verify(restApi).put(eq("/api/orders/ORDER-1/ship"), any(), eq(Void.class));
     }
 

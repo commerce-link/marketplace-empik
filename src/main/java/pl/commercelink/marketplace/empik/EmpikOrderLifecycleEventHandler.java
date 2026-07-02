@@ -19,6 +19,13 @@ class EmpikOrderLifecycleEventHandler {
             "WAITING_DEBIT", "WAITING_DEBIT_PAYMENT", "SHIPPING"
     );
 
+    // States where marking the order as shipped is pointless (already shipped) or
+    // impossible (order closed on the Mirakl side); earlier states stay fail-loud so
+    // SQS retries can complete the shipment once the order reaches SHIPPING.
+    private static final Set<String> SHIPPED_OR_CLOSED_ORDER_STATES = Set.of(
+            "SHIPPED", "TO_COLLECT", "RECEIVED", "CLOSED", "CANCELED", "REFUSED"
+    );
+
     private final RestApi restApi;
 
     EmpikOrderLifecycleEventHandler(RestApi restApi) {
@@ -34,6 +41,10 @@ class EmpikOrderLifecycleEventHandler {
     }
 
     void shipOrder(String externalOrderId, ShipmentUpdate update) {
+        EmpikOrder order = fetchOrder(externalOrderId);
+        if (order == null || SHIPPED_OR_CLOSED_ORDER_STATES.contains(order.getOrderState())) {
+            return;
+        }
         // Personal-collection shipments carry no tracking data (marketplace-api 0.2.0);
         // skip the tracking PUT in that case but still mark the order as shipped.
         if (update.trackingNo() != null) {
