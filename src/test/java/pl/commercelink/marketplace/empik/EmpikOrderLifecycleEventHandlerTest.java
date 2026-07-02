@@ -122,6 +122,18 @@ class EmpikOrderLifecycleEventHandlerTest {
         verify(restApi, never()).put(eq("/api/orders/ORDER-1/accept"), any(), any());
     }
 
+    @Test
+    void cancelOrderSkipsOrderInNonCancellableState() throws Exception {
+        // given
+        givenFetchedOrder("SHIPPED");
+
+        // when
+        handler.cancelOrder("ORDER-1");
+
+        // then
+        verify(restApi, never()).put(anyString(), any(), any());
+    }
+
     private void givenFetchedOrder(String state) throws Exception {
         EmpikOrdersResponse response = MAPPER.readValue(
                 """

@@ -8,11 +8,16 @@ import pl.commercelink.rest.client.RestApi;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 class EmpikOrderLifecycleEventHandler {
 
     private static final String WAITING_ACCEPTANCE = "WAITING_ACCEPTANCE";
+
+    private static final Set<String> CANCELLABLE_ORDER_STATES = Set.of(
+            "WAITING_DEBIT", "WAITING_DEBIT_PAYMENT", "SHIPPING"
+    );
 
     private final RestApi restApi;
 
@@ -45,7 +50,7 @@ class EmpikOrderLifecycleEventHandler {
         }
         if (WAITING_ACCEPTANCE.equals(order.getOrderState())) {
             acceptOrderLines(order, false);
-        } else {
+        } else if (CANCELLABLE_ORDER_STATES.contains(order.getOrderState())) {
             restApi.put("/api/orders/" + externalOrderId + "/cancel", Map.of(), Void.class);
         }
     }
