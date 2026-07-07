@@ -123,17 +123,15 @@ class EmpikOrderLifecycleEventHandlerTest {
     }
 
     @Test
-    void shipOrderSkipsTrackingWhenShipmentHasNoTracking() throws Exception {
+    void shipOrderDoesNothingWhenShipmentHasNoTracking() throws Exception {
         // given
-        givenFetchedOrder("SHIPPING");
         ShipmentUpdate update = new ShipmentUpdate(null, null, null);
 
         // when
         handler.shipOrder("ORDER-1", update);
 
         // then
-        verify(restApi, never()).put(eq("/api/orders/ORDER-1/tracking"), any(), any());
-        verify(restApi).put(eq("/api/orders/ORDER-1/ship"), any(), eq(Void.class));
+        verify(restApi, never()).put(anyString(), any(), any());
     }
 
     @Test
@@ -173,12 +171,12 @@ class EmpikOrderLifecycleEventHandlerTest {
     }
 
     @Test
-    void shipOrderStillAttemptsShipWhenOrderAwaitsDebit() throws Exception {
+    void shipOrderShipsWhenOrderAwaitsDebitAndTrackingIsPresent() throws Exception {
         // given
         givenFetchedOrder("WAITING_DEBIT");
 
         // when
-        handler.shipOrder("ORDER-1", new ShipmentUpdate(null, null, null));
+        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9"));
 
         // then
         verify(restApi).put(eq("/api/orders/ORDER-1/ship"), any(), eq(Void.class));

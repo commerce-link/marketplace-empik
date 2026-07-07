@@ -41,20 +41,21 @@ class EmpikOrderLifecycleEventHandler {
     }
 
     void shipOrder(String externalOrderId, ShipmentUpdate update) {
+        // Mirakl (OR24) rejects a ship transition without a registered tracking number
+        // (OR23), so with no tracking data we do nothing at all.
+        if (update.trackingNo() == null) {
+            return;
+        }
         EmpikOrder order = fetchOrder(externalOrderId);
         if (order == null || SHIPPED_OR_CLOSED_ORDER_STATES.contains(order.getOrderState())) {
             return;
         }
-        // Personal-collection shipments carry no tracking data (marketplace-api 0.2.0);
-        // skip the tracking PUT in that case but still mark the order as shipped.
-        if (update.trackingNo() != null) {
-            TrackingUpdateRequest tracking = new TrackingUpdateRequest(
-                    update.carrier(),
-                    update.trackingUrl(),
-                    update.trackingNo()
-            );
-            restApi.put("/api/orders/" + externalOrderId + "/tracking", tracking, Void.class);
-        }
+        TrackingUpdateRequest tracking = new TrackingUpdateRequest(
+                update.carrier(),
+                update.trackingUrl(),
+                update.trackingNo()
+        );
+        restApi.put("/api/orders/" + externalOrderId + "/tracking", tracking, Void.class);
         restApi.put("/api/orders/" + externalOrderId + "/ship", Map.of(), Void.class);
     }
 
