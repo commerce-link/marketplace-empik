@@ -27,7 +27,7 @@ class EmpikOrdersImportTest {
     private EmpikOrdersImport ordersImport;
 
     @Test
-    void fetchOrdersRequestsWaitingAcceptanceAndShippingOrders() throws Exception {
+    void fetchOrdersRequestsOnlyShippingOrders() throws Exception {
         // given
         EmpikOrdersResponse empty = MAPPER.readValue("{\"orders\":[]}", EmpikOrdersResponse.class);
         ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
@@ -37,6 +37,6 @@ class EmpikOrdersImportTest {
         ordersImport.fetchOrders();
 
         // then
-        assertEquals("WAITING_ACCEPTANCE,SHIPPING", params.getValue().get("order_state_codes"));
+        assertEquals("SHIPPING", params.getValue().get("order_state_codes"));
     }
 }
