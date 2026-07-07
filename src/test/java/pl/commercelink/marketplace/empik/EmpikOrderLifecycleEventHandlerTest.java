@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -131,7 +132,7 @@ class EmpikOrderLifecycleEventHandlerTest {
         handler.shipOrder("ORDER-1", update);
 
         // then
-        verify(restApi, never()).put(anyString(), any(), any());
+        verifyNoInteractions(restApi);
     }
 
     @Test
