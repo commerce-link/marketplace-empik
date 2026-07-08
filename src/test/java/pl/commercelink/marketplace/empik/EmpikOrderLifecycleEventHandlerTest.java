@@ -184,40 +184,6 @@ class EmpikOrderLifecycleEventHandlerTest {
     }
 
     @Test
-    void cancelOrderRefusesLinesWhenOrderStillWaitsForAcceptance() throws Exception {
-        // given
-        givenFetchedOrder("WAITING_ACCEPTANCE");
-
-        // when
-        handler.cancelOrder("ORDER-1");
-
-        // then
-        ArgumentCaptor<Object> body = ArgumentCaptor.forClass(Object.class);
-        verify(restApi).put(eq("/api/orders/ORDER-1/accept"), body.capture(), eq(Void.class));
-        assertEquals(
-                "{\"order_lines\":[{\"accepted\":false,\"id\":\"LINE-1\"},{\"accepted\":false,\"id\":\"LINE-2\"}]}",
-                MAPPER.writeValueAsString(body.getValue())
-        );
-    }
-
-    @Test
-    void cancelOrderRefusesOnlyLinesAwaitingAcceptance() throws Exception {
-        // given
-        givenFetchedOrderWithLineStates("WAITING_ACCEPTANCE", "WAITING_ACCEPTANCE", "CANCELED");
-
-        // when
-        handler.cancelOrder("ORDER-1");
-
-        // then
-        ArgumentCaptor<Object> body = ArgumentCaptor.forClass(Object.class);
-        verify(restApi).put(eq("/api/orders/ORDER-1/accept"), body.capture(), eq(Void.class));
-        assertEquals(
-                "{\"order_lines\":[{\"accepted\":false,\"id\":\"LINE-1\"}]}",
-                MAPPER.writeValueAsString(body.getValue())
-        );
-    }
-
-    @Test
     void cancelOrderPerformsFullCancelationOfAcceptedOrder() throws Exception {
         // given
         givenFetchedOrder("SHIPPING");
@@ -231,9 +197,9 @@ class EmpikOrderLifecycleEventHandlerTest {
     }
 
     @Test
-    void cancelOrderSkipsOrderInNonCancellableState() throws Exception {
+    void cancelOrderSkipsOrderStillWaitingForAcceptance() throws Exception {
         // given
-        givenFetchedOrder("SHIPPED");
+        givenFetchedOrder("WAITING_ACCEPTANCE");
 
         // when
         handler.cancelOrder("ORDER-1");
@@ -243,7 +209,7 @@ class EmpikOrderLifecycleEventHandlerTest {
     }
 
     @Test
-    void cancelOrderPerformsFullCancelationWhenAwaitingDebit() throws Exception {
+    void cancelOrderSkipsOrderAwaitingDebit() throws Exception {
         // given
         givenFetchedOrder("WAITING_DEBIT");
 
@@ -251,12 +217,11 @@ class EmpikOrderLifecycleEventHandlerTest {
         handler.cancelOrder("ORDER-1");
 
         // then
-        verify(restApi).put(eq("/api/orders/ORDER-1/cancel"), any(), eq(Void.class));
-        verify(restApi, never()).put(eq("/api/orders/ORDER-1/accept"), any(), any());
+        verify(restApi, never()).put(anyString(), any(), any());
     }
 
     @Test
-    void cancelOrderPerformsFullCancelationWhenAwaitingDebitPayment() throws Exception {
+    void cancelOrderSkipsOrderAwaitingDebitPayment() throws Exception {
         // given
         givenFetchedOrder("WAITING_DEBIT_PAYMENT");
 
@@ -264,8 +229,19 @@ class EmpikOrderLifecycleEventHandlerTest {
         handler.cancelOrder("ORDER-1");
 
         // then
-        verify(restApi).put(eq("/api/orders/ORDER-1/cancel"), any(), eq(Void.class));
-        verify(restApi, never()).put(eq("/api/orders/ORDER-1/accept"), any(), any());
+        verify(restApi, never()).put(anyString(), any(), any());
+    }
+
+    @Test
+    void cancelOrderSkipsOrderInNonCancellableState() throws Exception {
+        // given
+        givenFetchedOrder("SHIPPED");
+
+        // when
+        handler.cancelOrder("ORDER-1");
+
+        // then
+        verify(restApi, never()).put(anyString(), any(), any());
     }
 
     @Test

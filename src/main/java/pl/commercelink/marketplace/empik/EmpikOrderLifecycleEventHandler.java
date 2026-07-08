@@ -15,9 +15,7 @@ class EmpikOrderLifecycleEventHandler {
 
     private static final String WAITING_ACCEPTANCE = "WAITING_ACCEPTANCE";
 
-    private static final Set<String> CANCELLABLE_ORDER_STATES = Set.of(
-            "WAITING_DEBIT", "WAITING_DEBIT_PAYMENT", "SHIPPING"
-    );
+    private static final String SHIPPING = "SHIPPING";
 
     // States where marking the order as shipped is pointless (already shipped) or
     // impossible (order closed on the Mirakl side); earlier states stay fail-loud so
@@ -59,16 +57,18 @@ class EmpikOrderLifecycleEventHandler {
         restApi.put("/api/orders/" + externalOrderId + "/ship", Map.of(), Void.class);
     }
 
+    // Acceptance happens on the Mirakl panel and EmpikOrdersImport only pulls SHIPPING orders,
+    // so an order reaching Commerce Link has always been accepted; Mirakl states never move
+    // backwards, hence SHIPPING is the only state a cancel can legitimately observe. Any other
+    // state (already shipped, closed, cancelled) is a no-op rather than a 4xx that would loop
+    // the SQS message into the DLQ. Widening the import filter means revisiting this gate:
+    // cancelling a not-yet-accepted order requires refusing its lines (OR21), not OR29.
     void cancelOrder(String externalOrderId) {
         EmpikOrder order = fetchOrder(externalOrderId);
-        if (order == null) {
+        if (order == null || !SHIPPING.equals(order.getOrderState())) {
             return;
         }
-        if (WAITING_ACCEPTANCE.equals(order.getOrderState())) {
-            refuseOrderLines(order);
-        } else if (CANCELLABLE_ORDER_STATES.contains(order.getOrderState())) {
-            restApi.put("/api/orders/" + externalOrderId + "/cancel", Map.of(), Void.class);
-        }
+        restApi.put("/api/orders/" + externalOrderId + "/cancel", Map.of(), Void.class);
     }
 
     void updateInvoice(String externalOrderId, InvoiceUpdate update) {
@@ -77,17 +77,9 @@ class EmpikOrderLifecycleEventHandler {
     }
 
     private void acceptOrderLines(EmpikOrder order) {
-        submitLineDecisions(order, true);
-    }
-
-    private void refuseOrderLines(EmpikOrder order) {
-        submitLineDecisions(order, false);
-    }
-
-    private void submitLineDecisions(EmpikOrder order, boolean accepted) {
         List<AcceptOrderLine> lines = order.getOrderLines().stream()
                 .filter(line -> line.getOrderLineState() == null || WAITING_ACCEPTANCE.equals(line.getOrderLineState()))
-                .map(line -> new AcceptOrderLine(accepted, line.getOrderLineId()))
+                .map(line -> new AcceptOrderLine(true, line.getOrderLineId()))
                 .collect(Collectors.toList());
         if (lines.isEmpty()) {
             return;
