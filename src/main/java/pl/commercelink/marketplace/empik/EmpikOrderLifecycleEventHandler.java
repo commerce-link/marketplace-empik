@@ -6,14 +6,10 @@ import pl.commercelink.marketplace.api.ShipmentUpdate;
 import pl.commercelink.rest.client.RestApi;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 class EmpikOrderLifecycleEventHandler {
-
-    private static final String WAITING_ACCEPTANCE = "WAITING_ACCEPTANCE";
 
     private static final String SHIPPING = "SHIPPING";
 
@@ -31,11 +27,10 @@ class EmpikOrderLifecycleEventHandler {
     }
 
     void acceptOrder(String externalOrderId) {
-        EmpikOrder order = fetchOrder(externalOrderId);
-        if (order == null || !WAITING_ACCEPTANCE.equals(order.getOrderState())) {
-            return;
-        }
-        acceptOrderLines(order);
+        // Acceptance is performed by the seller on the Mirakl panel, and EmpikOrdersImport only
+        // pulls orders that are already SHIPPING, so an order can never reach Commerce Link in
+        // WAITING_ACCEPTANCE. Accepting here is therefore a no-op. Widening the import filter
+        // means restoring the OR21 line-decision call (accepted: true) gated on WAITING_ACCEPTANCE.
     }
 
     void shipOrder(String externalOrderId, ShipmentUpdate update) {
@@ -76,17 +71,6 @@ class EmpikOrderLifecycleEventHandler {
         // To be implemented after verifying the exact format on sandbox.
     }
 
-    private void acceptOrderLines(EmpikOrder order) {
-        List<AcceptOrderLine> lines = order.getOrderLines().stream()
-                .filter(line -> line.getOrderLineState() == null || WAITING_ACCEPTANCE.equals(line.getOrderLineState()))
-                .map(line -> new AcceptOrderLine(true, line.getOrderLineId()))
-                .collect(Collectors.toList());
-        if (lines.isEmpty()) {
-            return;
-        }
-        restApi.put("/api/orders/" + order.getOrderId() + "/accept", new AcceptOrderRequest(lines), Void.class);
-    }
-
     private EmpikOrder fetchOrder(String orderId) {
         Map<String, String> params = new HashMap<>();
         params.put("order_ids", orderId);
@@ -96,42 +80,6 @@ class EmpikOrderLifecycleEventHandler {
             return null;
         }
         return response.getOrders().get(0);
-    }
-
-    static class AcceptOrderRequest {
-
-        @JsonProperty("order_lines")
-        private final List<AcceptOrderLine> orderLines;
-
-        AcceptOrderRequest(List<AcceptOrderLine> orderLines) {
-            this.orderLines = orderLines;
-        }
-
-        public List<AcceptOrderLine> getOrderLines() {
-            return orderLines;
-        }
-    }
-
-    static class AcceptOrderLine {
-
-        @JsonProperty("accepted")
-        private final boolean accepted;
-
-        @JsonProperty("id")
-        private final String id;
-
-        AcceptOrderLine(boolean accepted, String id) {
-            this.accepted = accepted;
-            this.id = id;
-        }
-
-        public boolean isAccepted() {
-            return accepted;
-        }
-
-        public String getId() {
-            return id;
-        }
     }
 
     static class TrackingUpdateRequest {

@@ -34,73 +34,15 @@ class EmpikOrderLifecycleEventHandlerTest {
     private EmpikOrderLifecycleEventHandler handler;
 
     @Test
-    void acceptOrderAcceptsAllLinesOfWaitingAcceptanceOrder() throws Exception {
+    void acceptOrderDoesNothingBecauseAcceptanceHappensOnTheMiraklPanel() {
         // given
-        givenFetchedOrder("WAITING_ACCEPTANCE");
+        // no stubbing: the handler must not reach the Mirakl API at all
 
         // when
         handler.acceptOrder("ORDER-1");
 
         // then
-        ArgumentCaptor<Object> body = ArgumentCaptor.forClass(Object.class);
-        verify(restApi).put(eq("/api/orders/ORDER-1/accept"), body.capture(), eq(Void.class));
-        assertEquals(
-                "{\"order_lines\":[{\"accepted\":true,\"id\":\"LINE-1\"},{\"accepted\":true,\"id\":\"LINE-2\"}]}",
-                MAPPER.writeValueAsString(body.getValue())
-        );
-    }
-
-    @Test
-    void acceptOrderSendsDecisionsOnlyForLinesAwaitingAcceptance() throws Exception {
-        // given
-        givenFetchedOrderWithLineStates("WAITING_ACCEPTANCE", "WAITING_ACCEPTANCE", "CANCELED");
-
-        // when
-        handler.acceptOrder("ORDER-1");
-
-        // then
-        ArgumentCaptor<Object> body = ArgumentCaptor.forClass(Object.class);
-        verify(restApi).put(eq("/api/orders/ORDER-1/accept"), body.capture(), eq(Void.class));
-        assertEquals(
-                "{\"order_lines\":[{\"accepted\":true,\"id\":\"LINE-1\"}]}",
-                MAPPER.writeValueAsString(body.getValue())
-        );
-    }
-
-    @Test
-    void acceptOrderSkipsCallWhenNoLineAwaitsAcceptance() throws Exception {
-        // given
-        givenFetchedOrderWithLineStates("WAITING_ACCEPTANCE", "CANCELED", "CANCELED");
-
-        // when
-        handler.acceptOrder("ORDER-1");
-
-        // then
-        verify(restApi, never()).put(anyString(), any(), any());
-    }
-
-    @Test
-    void acceptOrderSkipsOrderThatIsNoLongerWaitingAcceptance() throws Exception {
-        // given
-        givenFetchedOrder("SHIPPING");
-
-        // when
-        handler.acceptOrder("ORDER-1");
-
-        // then
-        verify(restApi, never()).put(anyString(), any(), any());
-    }
-
-    @Test
-    void acceptOrderSkipsUnknownOrder() throws Exception {
-        // given
-        givenNoOrder();
-
-        // when
-        handler.acceptOrder("ORDER-1");
-
-        // then
-        verify(restApi, never()).put(anyString(), any(), any());
+        verifyNoInteractions(restApi);
     }
 
     @Test
@@ -193,7 +135,6 @@ class EmpikOrderLifecycleEventHandlerTest {
 
         // then
         verify(restApi).put(eq("/api/orders/ORDER-1/cancel"), any(), eq(Void.class));
-        verify(restApi, never()).put(eq("/api/orders/ORDER-1/accept"), any(), any());
     }
 
     @Test
@@ -262,18 +203,6 @@ class EmpikOrderLifecycleEventHandlerTest {
                 {"orders":[{"order_id":"ORDER-1","order_state":"%s",
                   "order_lines":[{"order_line_id":"LINE-1"},{"order_line_id":"LINE-2"}]}]}
                 """.formatted(state),
-                EmpikOrdersResponse.class
-        );
-        when(restApi.fetch(eq("/api/orders"), anyMap(), eq(EmpikOrdersResponse.class))).thenReturn(response);
-    }
-
-    private void givenFetchedOrderWithLineStates(String orderState, String line1State, String line2State) throws Exception {
-        EmpikOrdersResponse response = MAPPER.readValue(
-                """
-                {"orders":[{"order_id":"ORDER-1","order_state":"%s",
-                  "order_lines":[{"order_line_id":"LINE-1","order_line_state":"%s"},
-                    {"order_line_id":"LINE-2","order_line_state":"%s"}]}]}
-                """.formatted(orderState, line1State, line2State),
                 EmpikOrdersResponse.class
         );
         when(restApi.fetch(eq("/api/orders"), anyMap(), eq(EmpikOrdersResponse.class))).thenReturn(response);
