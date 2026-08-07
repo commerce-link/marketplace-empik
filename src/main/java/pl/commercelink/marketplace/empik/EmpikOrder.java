@@ -139,7 +139,7 @@ class EmpikOrder {
         if (shippingPudoId == null || shippingPudoId.isBlank()) {
             return null;
         }
-        return new MarketplaceCustomer.PickupPoint(shippingPudoId, shippingTypeLabel, shippingCarrierCode);
+        return new MarketplaceCustomer.PickupPoint(shippingPudoId, shippingTypeLabel);
     }
 
     public String findAdditionalField(String code) {

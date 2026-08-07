@@ -58,9 +58,9 @@ class EmpikOrdersImportTest {
 
         // then
         assertEquals("KRA01M", point.id());
-        assertEquals("INPOST", point.operator());
+        
         assertEquals("Paczkomat InPost", point.name());
-        assertEquals("INPOST", order.getShippingCarrierCode());
+        assertEquals(EmpikCarrier.INPOST, EmpikCarrier.fromCode(order.getShippingCarrierCode()));
     }
 
     @Test
