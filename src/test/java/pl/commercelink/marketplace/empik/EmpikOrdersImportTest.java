@@ -7,7 +7,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.commercelink.marketplace.api.MarketplaceCustomer;
 import pl.commercelink.rest.client.RestApi;
 
 import java.util.Map;
@@ -43,34 +42,31 @@ class EmpikOrdersImportTest {
     }
 
     @Test
-    void mapsPudoIdAndCarrierIntoThePickupPoint() throws Exception {
+    void mapsPudoIdAndCarrierIntoThePickupPointCode() throws Exception {
         // given
         EmpikOrder order = MAPPER.readValue("""
                 {
                   "shipping_pudo_id": "KRA01M",
-                  "shipping_carrier_code": "INPOST",
-                  "shipping_type_label": "Paczkomat InPost"
+                  "shipping_carrier_code": "INPOST"
                 }
                 """, EmpikOrder.class);
 
         // when
-        MarketplaceCustomer.PickupPoint point = order.toPickupPoint();
+        String pointCode = order.toPickupPointCode();
 
         // then
-        assertEquals("KRA01M", point.id());
-        
-        assertEquals("Paczkomat InPost", point.name());
+        assertEquals("KRA01M", pointCode);
         assertEquals(EmpikCarrier.INPOST, EmpikCarrier.fromCode(order.getShippingCarrierCode()));
     }
 
     @Test
-    void addressDeliveryHasNoPickupPoint() throws Exception {
+    void addressDeliveryHasNoPickupPointCode() throws Exception {
         // given
         EmpikOrder order = MAPPER.readValue("""
                 {"shipping_carrier_code": "DPD"}
                 """, EmpikOrder.class);
 
         // when / then
-        assertNull(order.toPickupPoint());
+        assertNull(order.toPickupPointCode());
     }
 }

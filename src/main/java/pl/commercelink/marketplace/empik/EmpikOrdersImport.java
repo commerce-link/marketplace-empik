@@ -45,8 +45,7 @@ class EmpikOrdersImport {
     private MarketplaceOrder<EmpikCarrier> toMarketplaceOrder(EmpikOrder empikOrder) {
         var marketplaceCustomer = empikOrder.getCustomer().toMarketplaceCustomer(
                 empikOrder.getCustomerNotificationEmail(),
-                empikOrder.findAdditionalField("nip"),
-                empikOrder.toPickupPoint()
+                empikOrder.findAdditionalField("nip")
         );
 
         List<MarketplaceProduct> products = empikOrder.getOrderLines().stream()
@@ -66,7 +65,8 @@ class EmpikOrdersImport {
                 BigDecimal.valueOf(empikOrder.getShippingPrice()),
                 resolvePaymentType(empikOrder.getPaymentType()),
                 empikOrder.getTransactionNumber(),
-                EmpikCarrier.fromCode(empikOrder.getShippingCarrierCode())
+                EmpikCarrier.fromCode(empikOrder.getShippingCarrierCode()),
+                empikOrder.toPickupPointCode()
         );
     }
 

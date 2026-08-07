@@ -25,7 +25,7 @@ class EmpikCustomer {
     public EmpikCustomer() {
     }
 
-    public MarketplaceCustomer toMarketplaceCustomer(String email, String taxId, MarketplaceCustomer.PickupPoint pickupPoint) {
+    public MarketplaceCustomer toMarketplaceCustomer(String email, String taxId) {
         String fullName = (firstname != null ? firstname : "") + " " + (lastname != null ? lastname : "");
         fullName = fullName.trim();
 
@@ -42,7 +42,7 @@ class EmpikCustomer {
                 billingAddress != null ? billingAddress.getPhone() : null,
                 taxId,
                 toBillingAddress(),
-                toShippingAddress(pickupPoint)
+                toShippingAddress()
         );
     }
 
@@ -58,7 +58,7 @@ class EmpikCustomer {
         );
     }
 
-    private MarketplaceCustomer.Address toShippingAddress(MarketplaceCustomer.PickupPoint pickupPoint) {
+    private MarketplaceCustomer.Address toShippingAddress() {
         if (shippingAddress == null) return null;
         return new MarketplaceCustomer.Address(
                 shippingAddress.getFullName(),
@@ -66,8 +66,7 @@ class EmpikCustomer {
                 shippingAddress.getStreet1(),
                 shippingAddress.getZipCode(),
                 shippingAddress.getCity(),
-                shippingAddress.getCountry(),
-                pickupPoint
+                shippingAddress.getCountry()
         );
     }
 
