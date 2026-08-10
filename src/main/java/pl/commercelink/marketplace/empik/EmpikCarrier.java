@@ -1,10 +1,10 @@
 package pl.commercelink.marketplace.empik;
 
-import pl.commercelink.marketplace.api.AliasedCarrier;
+import pl.commercelink.marketplace.api.Carrier;
 
 import java.util.List;
 
-public enum EmpikCarrier implements AliasedCarrier {
+public enum EmpikCarrier implements Carrier {
 
     INPOST(List.of("Paczkomat", "Paczkomaty")),
     ORLEN(List.of("Orlen", "RUCH")),
@@ -28,6 +28,6 @@ public enum EmpikCarrier implements AliasedCarrier {
     }
 
     static EmpikCarrier fromCode(String code) {
-        return AliasedCarrier.deserialize(values(), code);
+        return Carrier.deserialize(values(), code);
     }
 }
