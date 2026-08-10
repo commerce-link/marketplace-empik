@@ -2,6 +2,7 @@ package pl.commercelink.marketplace.empik;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import pl.commercelink.marketplace.api.PickupPoint;
 
 import java.util.List;
 
@@ -124,8 +125,8 @@ class EmpikOrder {
         return shippingCarrierCode;
     }
 
-    public String toPickupPointCode() {
-        return shippingPudoId == null || shippingPudoId.isBlank() ? null : shippingPudoId;
+    public PickupPoint toPickupPoint() {
+        return shippingPudoId == null || shippingPudoId.isBlank() ? null : new PickupPoint(shippingPudoId);
     }
 
     public String findAdditionalField(String code) {

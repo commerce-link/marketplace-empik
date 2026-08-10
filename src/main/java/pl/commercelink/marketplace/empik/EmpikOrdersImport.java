@@ -66,7 +66,7 @@ class EmpikOrdersImport {
                 resolvePaymentType(empikOrder.getPaymentType()),
                 empikOrder.getTransactionNumber(),
                 EmpikCarrier.fromCode(empikOrder.getShippingCarrierCode()),
-                empikOrder.toPickupPointCode()
+                empikOrder.toPickupPoint()
         );
     }
 

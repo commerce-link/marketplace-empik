@@ -2,6 +2,7 @@ package pl.commercelink.marketplace.empik;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import pl.commercelink.marketplace.api.PickupPoint;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -42,7 +43,7 @@ class EmpikOrdersImportTest {
     }
 
     @Test
-    void mapsPudoIdAndCarrierIntoThePickupPointCode() throws Exception {
+    void mapsPudoIdAndCarrierIntoThePickupPoint() throws Exception {
         // given
         EmpikOrder order = MAPPER.readValue("""
                 {
@@ -52,21 +53,21 @@ class EmpikOrdersImportTest {
                 """, EmpikOrder.class);
 
         // when
-        String pointCode = order.toPickupPointCode();
+        PickupPoint point = order.toPickupPoint();
 
         // then
-        assertEquals("KRA01M", pointCode);
+        assertEquals("KRA01M", point.code());
         assertEquals(EmpikCarrier.INPOST, EmpikCarrier.fromCode(order.getShippingCarrierCode()));
     }
 
     @Test
-    void addressDeliveryHasNoPickupPointCode() throws Exception {
+    void addressDeliveryHasNoPickupPoint() throws Exception {
         // given
         EmpikOrder order = MAPPER.readValue("""
                 {"shipping_carrier_code": "DPD"}
                 """, EmpikOrder.class);
 
         // when / then
-        assertNull(order.toPickupPointCode());
+        assertNull(order.toPickupPoint());
     }
 }
