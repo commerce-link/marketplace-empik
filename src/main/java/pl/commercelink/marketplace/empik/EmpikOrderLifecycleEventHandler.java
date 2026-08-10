@@ -44,7 +44,7 @@ class EmpikOrderLifecycleEventHandler {
             return;
         }
         TrackingUpdateRequest tracking = new TrackingUpdateRequest(
-                update.carrier(),
+                update.carrierName(),
                 update.trackingUrl(),
                 update.trackingNo()
         );

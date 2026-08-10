@@ -5,7 +5,7 @@ import pl.commercelink.rest.client.RestApi;
 
 import java.util.List;
 
-class EmpikMarketplaceProvider implements MarketplaceProvider<EmpikCarrier> {
+class EmpikMarketplaceProvider implements MarketplaceProvider {
 
     private final EmpikOrdersImport ordersImport;
     private final EmpikOrderLifecycleEventHandler lifecycleHandler;
@@ -18,7 +18,7 @@ class EmpikMarketplaceProvider implements MarketplaceProvider<EmpikCarrier> {
     }
 
     @Override
-    public List<MarketplaceOrder<EmpikCarrier>> fetchOrders() {
+    public List<MarketplaceOrder> fetchOrders() {
         return ordersImport.fetchOrders();
     }
 

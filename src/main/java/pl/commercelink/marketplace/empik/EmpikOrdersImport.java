@@ -16,8 +16,8 @@ class EmpikOrdersImport {
         this.restApi = restApi;
     }
 
-    List<MarketplaceOrder<EmpikCarrier>> fetchOrders() {
-        List<MarketplaceOrder<EmpikCarrier>> allOrders = new ArrayList<>();
+    List<MarketplaceOrder> fetchOrders() {
+        List<MarketplaceOrder> allOrders = new ArrayList<>();
         String pageToken = null;
 
         do {
@@ -42,7 +42,7 @@ class EmpikOrdersImport {
         return allOrders;
     }
 
-    private MarketplaceOrder<EmpikCarrier> toMarketplaceOrder(EmpikOrder empikOrder) {
+    private MarketplaceOrder toMarketplaceOrder(EmpikOrder empikOrder) {
         var marketplaceCustomer = empikOrder.getCustomer().toMarketplaceCustomer(
                 empikOrder.getCustomerNotificationEmail(),
                 empikOrder.findAdditionalField("nip")
@@ -58,14 +58,14 @@ class EmpikOrdersImport {
                 ))
                 .collect(Collectors.toList());
 
-        return new MarketplaceOrder<>(
+        return new MarketplaceOrder(
                 empikOrder.getOrderId(),
                 marketplaceCustomer,
                 products,
                 BigDecimal.valueOf(empikOrder.getShippingPrice()),
                 resolvePaymentType(empikOrder.getPaymentType()),
                 empikOrder.getTransactionNumber(),
-                EmpikCarrier.fromCode(empikOrder.getShippingCarrierCode()),
+                empikOrder.getShippingCarrierCode(),
                 empikOrder.toPickupPoint()
         );
     }

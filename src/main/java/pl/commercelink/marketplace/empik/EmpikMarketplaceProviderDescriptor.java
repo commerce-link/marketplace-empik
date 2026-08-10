@@ -28,12 +28,12 @@ public class EmpikMarketplaceProviderDescriptor implements MarketplaceProviderDe
     }
 
     @Override
-    public MarketplaceProvider<?> create(Map<String, String> configuration) {
+    public MarketplaceProvider create(Map<String, String> configuration) {
         throw new UnsupportedOperationException("Use create(configuration, context) instead");
     }
 
     @Override
-    public MarketplaceProvider<?> create(Map<String, String> configuration, Map<String, Object> context) {
+    public MarketplaceProvider create(Map<String, String> configuration, Map<String, Object> context) {
         String apiKey = configuration.get("apiKey");
         String apiUrl = metadata().get("apiUrl");
         RestApi restApi = RestApi.builder(apiUrl)
