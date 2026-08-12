@@ -49,7 +49,7 @@ class EmpikOrderLifecycleEventHandlerTest {
     void shipOrderSendsTrackingBeforeShipValidation() throws Exception {
         // given
         givenFetchedOrder("SHIPPING");
-        ShipmentUpdate update = new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9");
+        ShipmentUpdate update = new ShipmentUpdate("TRACK-9", "DPD", "DPD", "https://track.example/TRACK-9");
 
         // when
         handler.shipOrder("ORDER-1", update);
@@ -68,7 +68,7 @@ class EmpikOrderLifecycleEventHandlerTest {
     @Test
     void shipOrderDoesNothingWhenShipmentHasNoTracking() throws Exception {
         // given
-        ShipmentUpdate update = new ShipmentUpdate(null, null, null);
+        ShipmentUpdate update = new ShipmentUpdate(null, null, null, null);
 
         // when
         handler.shipOrder("ORDER-1", update);
@@ -83,7 +83,7 @@ class EmpikOrderLifecycleEventHandlerTest {
         givenFetchedOrder("SHIPPED");
 
         // when
-        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9"));
+        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "DPD", "https://track.example/TRACK-9"));
 
         // then
         verify(restApi, never()).put(anyString(), any(), any());
@@ -95,7 +95,7 @@ class EmpikOrderLifecycleEventHandlerTest {
         givenFetchedOrder("CANCELED");
 
         // when
-        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9"));
+        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "DPD", "https://track.example/TRACK-9"));
 
         // then
         verify(restApi, never()).put(anyString(), any(), any());
@@ -107,7 +107,7 @@ class EmpikOrderLifecycleEventHandlerTest {
         givenNoOrder();
 
         // when
-        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9"));
+        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "DPD", "https://track.example/TRACK-9"));
 
         // then
         verify(restApi, never()).put(anyString(), any(), any());
@@ -119,7 +119,7 @@ class EmpikOrderLifecycleEventHandlerTest {
         givenFetchedOrder("WAITING_DEBIT");
 
         // when
-        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "https://track.example/TRACK-9"));
+        handler.shipOrder("ORDER-1", new ShipmentUpdate("TRACK-9", "DPD", "DPD", "https://track.example/TRACK-9"));
 
         // then
         verify(restApi).put(eq("/api/orders/ORDER-1/ship"), any(), eq(Void.class));

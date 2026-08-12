@@ -2,6 +2,7 @@ package pl.commercelink.marketplace.empik;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import pl.commercelink.marketplace.api.PickupPoint;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -12,6 +13,7 @@ import pl.commercelink.rest.client.RestApi;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -38,5 +40,34 @@ class EmpikOrdersImportTest {
 
         // then
         assertEquals("SHIPPING", params.getValue().get("order_state_codes"));
+    }
+
+    @Test
+    void mapsPudoIdAndCarrierIntoThePickupPoint() throws Exception {
+        // given
+        EmpikOrder order = MAPPER.readValue("""
+                {
+                  "shipping_pudo_id": "KRA01M",
+                  "shipping_carrier_code": "INPOST"
+                }
+                """, EmpikOrder.class);
+
+        // when
+        PickupPoint point = order.toPickupPoint();
+
+        // then
+        assertEquals("KRA01M", point.code());
+        assertEquals("INPOST", order.getShippingCarrierCode());
+    }
+
+    @Test
+    void addressDeliveryHasNoPickupPoint() throws Exception {
+        // given
+        EmpikOrder order = MAPPER.readValue("""
+                {"shipping_carrier_code": "DPD"}
+                """, EmpikOrder.class);
+
+        // when / then
+        assertNull(order.toPickupPoint());
     }
 }
