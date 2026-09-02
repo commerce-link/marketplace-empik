@@ -62,12 +62,14 @@ class EmpikOrdersImport {
                 empikOrder.getOrderId(),
                 marketplaceCustomer,
                 products,
-                BigDecimal.valueOf(empikOrder.getShippingPrice()),
-                empikOrder.getShippingCarrierCode(),
-                resolvePaymentType(empikOrder.getPaymentType()),
-                empikOrder.getTransactionNumber(),
-                empikOrder.toPickupPoint(),
-                empikOrder.toEstimatedShippingAt()
+                new MarketplaceOrder.Shipping(
+                        BigDecimal.valueOf(empikOrder.getShippingPrice()),
+                        empikOrder.getShippingCarrierCode(),
+                        empikOrder.toPickupPoint(),
+                        empikOrder.toEstimatedShippingAt()),
+                new MarketplaceOrder.Payment(
+                        resolvePaymentType(empikOrder.getPaymentType()),
+                        empikOrder.getTransactionNumber())
         );
     }
 
