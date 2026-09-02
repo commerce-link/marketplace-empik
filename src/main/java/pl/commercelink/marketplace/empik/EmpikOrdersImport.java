@@ -67,9 +67,8 @@ class EmpikOrdersImport {
                         empikOrder.getShippingCarrierCode(),
                         empikOrder.toPickupPoint(),
                         empikOrder.toEstimatedShippingAt()),
-                new MarketplaceOrder.Payment(
-                        resolvePaymentType(empikOrder.getPaymentType()),
-                        empikOrder.getTransactionNumber())
+                resolvePaymentType(empikOrder.getPaymentType()),
+                empikOrder.getTransactionNumber()
         );
     }
 
