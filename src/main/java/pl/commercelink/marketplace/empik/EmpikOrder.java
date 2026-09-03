@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import pl.commercelink.marketplace.api.PickupPoint;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -57,6 +59,28 @@ class EmpikOrder {
     private String shippingPudoId;
     @JsonProperty("shipping_carrier_code")
     private String shippingCarrierCode;
+
+    @JsonProperty("shipping_deadline")
+    private String shippingDeadline;
+
+    public String getShippingDeadline() {
+        return shippingDeadline;
+    }
+
+    public void setShippingDeadline(String shippingDeadline) {
+        this.shippingDeadline = shippingDeadline;
+    }
+
+    public LocalDate toEstimatedShippingAt() {
+        if (shippingDeadline == null || shippingDeadline.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(shippingDeadline.trim().substring(0, 10));
+        } catch (DateTimeParseException | IndexOutOfBoundsException ignored) {
+            return null;
+        }
+    }
 
     public EmpikOrder() {
     }
