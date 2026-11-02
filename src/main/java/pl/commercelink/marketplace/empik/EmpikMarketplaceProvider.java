@@ -4,17 +4,20 @@ import pl.commercelink.marketplace.api.*;
 import pl.commercelink.rest.client.RestApi;
 
 import java.util.List;
+import java.util.Optional;
 
 class EmpikMarketplaceProvider implements MarketplaceProvider {
 
     private final EmpikOrdersImport ordersImport;
     private final EmpikOrderLifecycleEventHandler lifecycleHandler;
     private final EmpikOfferExport offerExport;
+    private final EmpikOffersListing offersListing;
 
     EmpikMarketplaceProvider(RestApi restApi) {
         this.ordersImport = new EmpikOrdersImport(restApi);
         this.lifecycleHandler = new EmpikOrderLifecycleEventHandler(restApi);
         this.offerExport = new EmpikOfferExport(restApi);
+        this.offersListing = new EmpikOffersListing(restApi);
     }
 
     @Override
@@ -25,6 +28,11 @@ class EmpikMarketplaceProvider implements MarketplaceProvider {
     @Override
     public void exportOffers(List<MarketplaceOffer> toPublish, List<MarketplaceOffer> toRemove) {
         offerExport.export(toPublish, toRemove);
+    }
+
+    @Override
+    public Optional<MarketplaceOffers> offers() {
+        return Optional.of(offersListing);
     }
 
     @Override
