@@ -7,17 +7,20 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.commercelink.marketplace.api.MarketplaceListedOffer;
+import pl.commercelink.marketplace.api.MarketplaceOffersPage;
+import pl.commercelink.marketplace.api.MarketplaceRateLimitedException;
+import pl.commercelink.rest.client.HttpClientException;
 import pl.commercelink.rest.client.RestApi;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,24 +32,80 @@ class EmpikOffersListingTest {
     private RestApi restApi;
 
     @Test
-    void pagesThroughAllOffersUsingOffset() throws Exception {
+    void firstPageStartsAtOffsetZero() throws Exception {
         // given
         ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
         when(restApi.fetch(eq("/api/offers"), params.capture(), eq(EmpikOffersResponse.class)))
-                .thenReturn(response(150, 100), response(150, 50));
-        List<List<MarketplaceListedOffer>> pages = new ArrayList<>();
+                .thenReturn(response(250, 100));
 
         // when
-        new EmpikOffersListing(restApi).forEachPage(pages::add);
+        MarketplaceOffersPage page = new EmpikOffersListing(restApi).page(null);
 
         // then
-        assertEquals(2, pages.size());
-        assertEquals(100, pages.get(0).size());
-        assertEquals(50, pages.get(1).size());
-        verify(restApi, times(2)).fetch(eq("/api/offers"), params.capture(), eq(EmpikOffersResponse.class));
-        assertEquals("0", params.getAllValues().get(0).get("offset"));
-        assertEquals("100", params.getAllValues().get(1).get("offset"));
-        assertEquals("100", params.getAllValues().get(0).get("max"));
+        assertEquals("0", params.getValue().get("offset"));
+        assertEquals("100", params.getValue().get("max"));
+        assertEquals(100, page.offers().size());
+        assertEquals(250, page.total());
+    }
+
+    @Test
+    void nextCursorIsTheNextOffset() throws Exception {
+        // given
+        ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        when(restApi.fetch(eq("/api/offers"), params.capture(), eq(EmpikOffersResponse.class)))
+                .thenReturn(response(250, 100));
+
+        // when
+        MarketplaceOffersPage page = new EmpikOffersListing(restApi).page("100");
+
+        // then
+        assertEquals("100", params.getValue().get("offset"));
+        assertEquals("200", page.nextCursor());
+    }
+
+    @Test
+    void lastPageHasNoNextCursor() throws Exception {
+        // given
+        when(restApi.fetch(eq("/api/offers"), anyMap(), eq(EmpikOffersResponse.class)))
+                .thenReturn(response(150, 50));
+
+        // when
+        MarketplaceOffersPage page = new EmpikOffersListing(restApi).page("100");
+
+        // then
+        assertNull(page.nextCursor());
+        assertEquals(50, page.offers().size());
+    }
+
+    @Test
+    void translatesTooManyRequestsIntoRateLimit() {
+        // given
+        when(restApi.fetch(eq("/api/offers"), anyMap(), eq(EmpikOffersResponse.class)))
+                .thenThrow(new HttpClientException(429, "Too Many Requests"));
+
+        // when
+        MarketplaceRateLimitedException exception = assertThrows(MarketplaceRateLimitedException.class,
+                () -> new EmpikOffersListing(restApi).page(null));
+
+        // then
+        assertEquals(Duration.ofSeconds(60), exception.retryAfter());
+    }
+
+    @Test
+    void otherHttpErrorsPropagate() {
+        // given
+        HttpClientException failure = new HttpClientException(500, "boom");
+        when(restApi.fetch(eq("/api/offers"), anyMap(), eq(EmpikOffersResponse.class))).thenThrow(failure);
+
+        // when / then
+        assertSame(failure, assertThrows(HttpClientException.class, () -> new EmpikOffersListing(restApi).page(null)));
+    }
+
+    @Test
+    void rejectsNonNumericCursor() {
+        // given / when / then
+        assertThrows(IllegalArgumentException.class, () -> new EmpikOffersListing(restApi).page("abc"));
+        verifyNoInteractions(restApi);
     }
 
     @Test
@@ -69,15 +128,13 @@ class EmpikOffersListingTest {
                   }]
                 }
                 """, EmpikOffersResponse.class);
-        when(restApi.fetch(eq("/api/offers"), org.mockito.ArgumentMatchers.anyMap(), eq(EmpikOffersResponse.class)))
+        when(restApi.fetch(eq("/api/offers"), anyMap(), eq(EmpikOffersResponse.class)))
                 .thenReturn(response);
-        List<MarketplaceListedOffer> collected = new ArrayList<>();
 
         // when
-        new EmpikOffersListing(restApi).forEachPage(collected::addAll);
+        MarketplaceListedOffer offer = new EmpikOffersListing(restApi).page(null).offers().get(0);
 
         // then
-        MarketplaceListedOffer offer = collected.get(0);
         assertEquals(List.of("5903771700818"), offer.eans());
         assertEquals("SKU-1", offer.sellerOfferKey());
         assertEquals("Mouse", offer.title());
@@ -89,16 +146,15 @@ class EmpikOffersListingTest {
     @Test
     void stopsOnEmptyPage() throws Exception {
         // given
-        when(restApi.fetch(eq("/api/offers"), org.mockito.ArgumentMatchers.anyMap(), eq(EmpikOffersResponse.class)))
+        when(restApi.fetch(eq("/api/offers"), anyMap(), eq(EmpikOffersResponse.class)))
                 .thenReturn(response(500, 0));
-        List<List<MarketplaceListedOffer>> pages = new ArrayList<>();
 
         // when
-        new EmpikOffersListing(restApi).forEachPage(pages::add);
+        MarketplaceOffersPage page = new EmpikOffersListing(restApi).page("100");
 
         // then
-        assertTrue(pages.isEmpty());
-        verify(restApi, times(1)).fetch(eq("/api/offers"), org.mockito.ArgumentMatchers.anyMap(), eq(EmpikOffersResponse.class));
+        assertTrue(page.offers().isEmpty());
+        assertNull(page.nextCursor());
     }
 
     @Test
