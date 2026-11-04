@@ -122,7 +122,7 @@ class EmpikOffersListingTest {
                     "price": 49.90,
                     "active": true,
                     "product_references": [
-                      {"reference": "5903771700818", "reference_type": "EAN"},
+                      {"reference": "2001000000012", "reference_type": "EAN"},
                       {"reference": "MPN-1", "reference_type": "MPN"}
                     ]
                   }]
@@ -135,7 +135,7 @@ class EmpikOffersListingTest {
         MarketplaceListedOffer offer = new EmpikOffersListing(restApi).page(null).offers().get(0);
 
         // then
-        assertEquals(List.of("5903771700818"), offer.eans());
+        assertEquals(List.of("2001000000012"), offer.eans());
         assertEquals("SKU-1", offer.sellerOfferKey());
         assertEquals("Mouse", offer.title());
         assertEquals(7, offer.quantity());

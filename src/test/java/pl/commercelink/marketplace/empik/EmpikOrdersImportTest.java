@@ -83,8 +83,8 @@ class EmpikOrdersImportTest {
                   "order_id": "ORD-1",
                   "customer": {"firstname": "Jan", "lastname": "Kowalski"},
                   "order_lines": [{
-                    "offer_sku": "SILLO-84980",
-                    "product_sku": "1696938202",
+                    "offer_sku": "PS-1001",
+                    "product_sku": "1000000017",
                     "product_title": "Mouse",
                     "price_unit": 10.0,
                     "quantity": 2,
@@ -99,7 +99,7 @@ class EmpikOrdersImportTest {
 
         // then
         MarketplaceProduct product = orders.get(0).products().get(0);
-        assertEquals("SILLO-84980", product.sellerOfferKey());
-        assertEquals("1696938202", product.manufacturerCode());
+        assertEquals("PS-1001", product.sellerOfferKey());
+        assertEquals("1000000017", product.manufacturerCode());
     }
 }
