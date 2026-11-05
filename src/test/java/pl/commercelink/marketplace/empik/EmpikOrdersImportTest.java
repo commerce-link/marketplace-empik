@@ -2,6 +2,8 @@ package pl.commercelink.marketplace.empik;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import pl.commercelink.marketplace.api.MarketplaceOrder;
+import pl.commercelink.marketplace.api.MarketplaceProduct;
 import pl.commercelink.marketplace.api.PickupPoint;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -10,10 +12,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.commercelink.rest.client.RestApi;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -69,5 +73,33 @@ class EmpikOrdersImportTest {
 
         // when / then
         assertNull(order.toPickupPoint());
+    }
+
+    @Test
+    void mapsOfferSkuToSellerOfferKeyAndKeepsProductSkuAsManufacturerCode() throws Exception {
+        // given
+        EmpikOrdersResponse response = MAPPER.readValue("""
+                {"orders":[{
+                  "order_id": "ORD-1",
+                  "customer": {"firstname": "Jan", "lastname": "Kowalski"},
+                  "order_lines": [{
+                    "offer_sku": "PS-1001",
+                    "product_sku": "1000000017",
+                    "product_title": "Mouse",
+                    "price_unit": 10.0,
+                    "quantity": 2,
+                    "total_commission": 1.0
+                  }]
+                }]}
+                """, EmpikOrdersResponse.class);
+        when(restApi.fetch(eq("/api/orders"), any(), eq(EmpikOrdersResponse.class))).thenReturn(response);
+
+        // when
+        List<MarketplaceOrder> orders = ordersImport.fetchOrders();
+
+        // then
+        MarketplaceProduct product = orders.get(0).products().get(0);
+        assertEquals("PS-1001", product.sellerOfferKey());
+        assertEquals("1000000017", product.manufacturerCode());
     }
 }

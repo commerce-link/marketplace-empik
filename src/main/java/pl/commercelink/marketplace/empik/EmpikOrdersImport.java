@@ -54,7 +54,8 @@ class EmpikOrdersImport {
                         line.getProductSku(),
                         BigDecimal.valueOf(line.getPriceUnit()),
                         line.getQuantity(),
-                        BigDecimal.valueOf(line.getTotalCommission())
+                        BigDecimal.valueOf(line.getTotalCommission()),
+                        line.getOfferSku()
                 ))
                 .collect(Collectors.toList());
 

@@ -43,6 +43,11 @@ public class EmpikMarketplaceProviderDescriptor implements MarketplaceProviderDe
     }
 
     @Override
+    public boolean supportsOfferListing() {
+        return true;
+    }
+
+    @Override
     public Map<String, String> metadata() {
         return Map.of(
                 "apiUrl", "https://marketplace.empik.com"
