@@ -102,4 +102,55 @@ class EmpikOrdersImportTest {
         assertEquals("PS-1001", product.sellerOfferKey());
         assertEquals("1000000017", product.manufacturerCode());
     }
+
+    @Test
+    void usesTheCustomerEmailAdditionalFieldInsteadOfTheRelayAddress() throws Exception {
+        // given
+        EmpikOrdersResponse response = MAPPER.readValue("""
+                {"orders":[{
+                  "order_id": "ORD-1",
+                  "customer_notification_email": "r7pfghaa671f.dlec3nkc3@notification.mirakl.net",
+                  "customer": {"firstname": "Jan", "lastname": "Kowalski"},
+                  "order_additional_fields": [
+                    {"code": "customer-email", "type": "STRING", "value": "jan.kowalski@example.com"},
+                    {"code": "nip", "type": "STRING", "value": "8981401291"}
+                  ],
+                  "order_lines": []
+                }]}
+                """, EmpikOrdersResponse.class);
+        when(restApi.fetch(eq("/api/orders"), any(), eq(EmpikOrdersResponse.class))).thenReturn(response);
+
+        // when
+        List<MarketplaceOrder> orders = ordersImport.fetchOrders();
+
+        // then
+        assertEquals("jan.kowalski@example.com", orders.get(0).customer().email());
+    }
+
+    @Test
+    void fallsBackToTheRelayAddressWhenTheCustomerEmailFieldIsMissingOrBlank() throws Exception {
+        // given
+        EmpikOrdersResponse response = MAPPER.readValue("""
+                {"orders":[{
+                  "order_id": "ORD-1",
+                  "customer_notification_email": "relay-1@notification.mirakl.net",
+                  "customer": {"firstname": "Jan", "lastname": "Kowalski"},
+                  "order_lines": []
+                },{
+                  "order_id": "ORD-2",
+                  "customer_notification_email": "relay-2@notification.mirakl.net",
+                  "customer": {"firstname": "Anna", "lastname": "Nowak"},
+                  "order_additional_fields": [{"code": "customer-email", "type": "STRING", "value": "  "}],
+                  "order_lines": []
+                }]}
+                """, EmpikOrdersResponse.class);
+        when(restApi.fetch(eq("/api/orders"), any(), eq(EmpikOrdersResponse.class))).thenReturn(response);
+
+        // when
+        List<MarketplaceOrder> orders = ordersImport.fetchOrders();
+
+        // then
+        assertEquals("relay-1@notification.mirakl.net", orders.get(0).customer().email());
+        assertEquals("relay-2@notification.mirakl.net", orders.get(1).customer().email());
+    }
 }

@@ -133,6 +133,19 @@ class EmpikOrder {
         return customerNotificationEmail;
     }
 
+    /**
+     * Empik sends the buyer's own address in the {@code customer-email} additional field;
+     * {@code customer_notification_email} is a Mirakl relay address ({@code ...@notification.mirakl.net})
+     * and is used only when that field is missing or blank.
+     */
+    public String resolveCustomerEmail() {
+        String customerEmail = findAdditionalField("customer-email");
+        if (customerEmail != null && !customerEmail.isBlank()) {
+            return customerEmail.trim();
+        }
+        return customerNotificationEmail;
+    }
+
     public EmpikCustomer getCustomer() {
         return customer;
     }

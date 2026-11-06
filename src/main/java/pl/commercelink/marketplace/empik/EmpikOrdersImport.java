@@ -44,7 +44,7 @@ class EmpikOrdersImport {
 
     private MarketplaceOrder toMarketplaceOrder(EmpikOrder empikOrder) {
         var marketplaceCustomer = empikOrder.getCustomer().toMarketplaceCustomer(
-                empikOrder.getCustomerNotificationEmail(),
+                empikOrder.resolveCustomerEmail(),
                 empikOrder.findAdditionalField("nip")
         );
 
